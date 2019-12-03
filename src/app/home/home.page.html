@@ -4,24 +4,30 @@
             <ion-menu-button></ion-menu-button>
         </ion-buttons>
         <ion-title>
-            Home
+            WPF Calendar
         </ion-title>
+        <ion-buttons slot="end">
+            <ion-button (click)="presentModal()">
+                <ion-icon name="add" slot="icon-only"></ion-icon>
+            </ion-button>
+        </ion-buttons>
     </ion-toolbar>
 </ion-header>
 
-<ion-content *ngIf="events$ | async; let events">
+<ion-content>
     <app-calendar-header
             [(view)]="view"
             [(viewDate)]="viewDate"
-            (viewDateChange)="fetchEvents()">
+            (viewDateChange)="this.fetchAppointments()">
     </app-calendar-header>
 
     <mwl-calendar-month-view
             [viewDate]="viewDate"
-            [events]="events"
+            [events]="appointments"
+            [refresh]="refresh"
             [activeDayIsOpen]="activeDayIsOpen"
             (dayClicked)="dayClicked($event.day)"
-            (eventClicked)="eventClicked($event.event)"
+            (eventClicked)="appointmentClicked($event.event)"
     >
     </mwl-calendar-month-view>
 

@@ -1,0 +1,71 @@
+<ion-header translucent>
+    <ion-toolbar>
+        <ion-title>{{isNew ? 'New Appointment' : 'Edit Appointment'}}</ion-title>
+        <ion-buttons slot="end">
+            <ion-button (click)="dismissModal()">
+                <ion-icon name="close" slot="icon-only"></ion-icon>
+            </ion-button>
+        </ion-buttons>
+    </ion-toolbar>
+</ion-header>
+
+<ion-content>
+    <form [formGroup]="appointmentFormGroup" (ngSubmit)="onSubmit()">
+        <ion-item>
+            <ion-label position="floating">Summary</ion-label>
+            <ion-textarea spellcheck="true"
+                          debounce="500"
+                          formControlName="summary"
+                          placeholder="Enter summary here...">
+            </ion-textarea>
+        </ion-item>
+        <div class="error-container"
+             *ngIf="getControl('summary').invalid && (getControl('summary').dirty || getControl('summary').touched)">
+            <app-error-message [formController]="getControl('summary')"></app-error-message>
+        </div>
+
+        <ion-item>
+            <ion-label position="floating">Location</ion-label>
+            <ion-textarea spellcheck="true"
+                          debounce="500"
+                          formControlName="location"
+                          placeholder="Enter location here...">
+            </ion-textarea>
+        </ion-item>
+        <div class="error-container"
+             *ngIf="getControl('location').invalid && (getControl('location').dirty || getControl('location').touched)">
+            <app-error-message [formController]="getControl('location')"></app-error-message>
+        </div>
+
+        <ion-item>
+            <ion-label position="floating">Start Date</ion-label>
+            <ion-datetime formControlName="startDate"
+                          placeholder="Enter start date"
+                          [min]="minDate"
+                          [max]="maxDate"
+                          [displayFormat]="displayFormat"></ion-datetime>
+        </ion-item>
+        <div class="error-container"
+             *ngIf="getControl('startDate').invalid && (getControl('startDate').dirty || getControl('startDate').touched)">
+            <app-error-message [formController]="getControl('startDate')"></app-error-message>
+        </div>
+
+        <ion-item>
+            <ion-label position="floating">End Date</ion-label>
+            <ion-datetime formControlName="endDate"
+                          placeholder="Enter end date"
+                          [min]="endDateMin"
+                          [max]="maxDate"
+                          [displayFormat]="displayFormat"></ion-datetime>
+        </ion-item>
+        <div class="error-container"
+             *ngIf="getControl('endDate').invalid && (getControl('endDate').dirty || getControl('endDate').touched)">
+            <app-error-message [formController]="getControl('endDate')"></app-error-message>
+        </div>
+
+        <ion-buttons class="justify-content-center">
+            <ion-button class="flex-auto" fill="solid" type="submit">Save</ion-button>
+            <ion-button class="flex-auto" fill="solid" type="reset">Reset</ion-button>
+        </ion-buttons>
+    </form>
+</ion-content>

@@ -1,4 +1,4 @@
-export const colors: any = {
+export const COLORS: any = {
     red: {
         primary: '#ad2121',
         secondary: '#FAE3E3'

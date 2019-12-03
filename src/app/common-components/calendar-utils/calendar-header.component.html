@@ -1,0 +1,34 @@
+<div class="justify-content-center">
+    <ion-button (viewDateChange)="viewDateChange.next(viewDate)"
+                [(viewDate)]="viewDate"
+                [view]="view"
+                class="flex-auto"
+                color="primary"
+                fill="solid"
+                mwlCalendarPreviousView>
+        Previous
+    </ion-button>
+    <ion-button
+            (viewDateChange)="viewDateChange.next(viewDate)"
+            color="primary"
+            fill="solid"
+            [(viewDate)]="viewDate"
+            class="flex-auto"
+            mwlCalendarToday>
+        Today
+    </ion-button>
+    <ion-button (viewDateChange)="viewDateChange.next(viewDate)"
+                [(viewDate)]="viewDate"
+                [view]="view"
+                class="flex-auto"
+                color="primary"
+                fill="solid"
+                mwlCalendarNextView>
+        Next
+    </ion-button>
+</div>
+<div class="justify-content-center">
+    <h3>{{ viewDate | calendarDate: view + 'ViewTitle':locale }}</h3>
+</div>
+
+<br/>

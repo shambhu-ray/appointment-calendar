@@ -2,7 +2,7 @@ import {Inject, Injectable, InjectionToken} from '@angular/core';
 import {HttpClient, HttpErrorResponse, HttpHeaders, HttpParams} from "@angular/common/http";
 import {Observable, throwError} from "rxjs";
 import {catchError} from "rxjs/operators";
-import {ErrorResponseModel} from "../models/error-response.model";
+import {IErrorResponseModel} from "../models/error-response";
 
 export const BASE_URL = new InjectionToken<string>('BASE_URL');
 
@@ -43,7 +43,7 @@ export class ApiService {
      * @param headers
      */
     public post<T>(url: string, requestBody: Object, headers?: HttpHeaders): Observable<T> {
-        return this._http.post<T>(url, requestBody, {headers: this.getHeaders(headers)})
+        return this._http.post<T>(this._baseUrl + url, requestBody, {headers: this.getHeaders(headers)})
             .pipe(catchError(this.handleError));
     }
 
@@ -53,12 +53,12 @@ export class ApiService {
      * @param headers
      */
     public delete<T>(url: string, headers?: HttpHeaders): Observable<T> {
-        return this._http.delete<T>(url, {headers: this.getHeaders(headers)})
+        return this._http.delete<T>(this._baseUrl + url, {headers: this.getHeaders(headers)})
             .pipe(catchError(this.handleError));
     }
 
     public patch<T>(url: string, headers?: HttpHeaders): Observable<T> {
-        return this._http.patch(url, {headers: this.getHeaders(headers)})
+        return this._http.patch(this._baseUrl + url, {headers: this.getHeaders(headers)})
             .pipe(catchError(this.handleError))
     }
 
@@ -69,7 +69,7 @@ export class ApiService {
      * @param headers
      */
     public put<T>(url: string, requestBody: Object, headers?: HttpHeaders): Observable<T> {
-        return this._http.put<T>(url, requestBody, {headers: this.getHeaders(headers)})
+        return this._http.put<T>(this._baseUrl + url, requestBody, {headers: this.getHeaders(headers)})
             .pipe(catchError(this.handleError));
     }
 
@@ -78,7 +78,7 @@ export class ApiService {
      * @param response
      */
     handleError = (response: HttpErrorResponse): Observable<any> => {
-        const errorResponse: ErrorResponseModel = {
+        const errorResponse: IErrorResponseModel = {
             statusCode: response.status,
             message: response.error ?
                 response.error.message ?

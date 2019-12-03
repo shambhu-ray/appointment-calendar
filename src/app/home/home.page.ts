@@ -1,31 +1,15 @@
-import {ChangeDetectionStrategy, Component, OnInit} from '@angular/core';
+import {ChangeDetectionStrategy, Component, OnDestroy, OnInit} from '@angular/core';
 import {CalendarDateFormatter, CalendarEvent, CalendarView} from "angular-calendar";
-import {Observable, Subject} from "rxjs";
-import {colors} from "../calendar-utils/colors";
-import {DateFormatter} from "../calendar-utils/date-formatter.provider";
+import {Subject} from "rxjs";
+import {DateFormatter} from "../common-components/calendar-utils/date-formatter.provider";
 import {endOfMonth, format, isSameDay, isSameMonth, startOfMonth} from 'date-fns';
 import {HttpParams} from "@angular/common/http";
-import {map, tap} from "rxjs/operators";
+import {map, takeUntil, tap} from "rxjs/operators";
 import {ApiService} from "../core/api.service";
-
-interface Appointment {
-    id: number;
-    summary: string;
-    location: string;
-    startDate: string;
-    endDate: string;
-}
-
-function getTimezoneOffsetString(date: Date): string {
-    const timezoneOffset = date.getTimezoneOffset();
-    const hoursOffset = String(
-        Math.floor(Math.abs(timezoneOffset / 60))
-    ).padStart(2, '0');
-    const minutesOffset = String(Math.abs(timezoneOffset % 60)).padEnd(2, '0');
-    const direction = timezoneOffset > 0 ? '-' : '+';
-
-    return `T00:00:00${direction}${hoursOffset}:${minutesOffset}`;
-}
+import {ActionSheetController, ModalController} from '@ionic/angular';
+import {AppointmentComponent} from '../common-components/appointment/appointment.component';
+import {COLORS} from '../models/colors.model';
+import {DATE_FORMAT} from '../models/date-format.model';
 
 @Component({
     selector: 'app-home',
@@ -39,86 +23,35 @@ function getTimezoneOffsetString(date: Date): string {
         }
     ]
 })
-export class HomePage implements OnInit {
+export class HomePage implements OnInit, OnDestroy {
     view: CalendarView = CalendarView.Month;
     viewDate: Date = new Date();
+    activeDayIsOpen: boolean = false;
+    appointments: CalendarEvent[];
     refresh: Subject<any> = new Subject();
-    activeDayIsOpen: boolean = true;
-    events$: Observable<Array<any>>;
+    private _destroy$: Subject<boolean> = new Subject<boolean>();
 
-    // events$: Observable<Array<CalendarEvent<{ appointment: Appointment }>>>;
+    // events$: Observable<Array<CalendarEvent<{ appointment: IAppointmentModel }>>>;
 
-    constructor(private _apiService: ApiService) {
+    constructor(
+        private _apiService: ApiService,
+        private _modalCtrl: ModalController,
+        private _actionSheetCtrl: ActionSheetController
+    ) {
     }
 
     ngOnInit(): void {
-        this.fetchEvents();
+        this.fetchAppointments();
     }
 
-    fetchEvents(): void {
-        const params = new HttpParams()
-            .set(
-                'startDate_gte',
-                format(startOfMonth(this.viewDate), 'yyyy-MM-dd')
-            )
-            .set(
-                'startDate_lte',
-                format(endOfMonth(this.viewDate), 'yyyy-MM-dd')
-            );
-
-        this.events$ = this._apiService.get('appointments', undefined, params)
-            .pipe(
-                map((appointments: Appointment[]) => {
-                    return appointments.map((appointment: Appointment) => {
-                        return {
-                            title: appointment.summary,
-                            start: new Date(
-                                appointment.startDate + getTimezoneOffsetString(this.viewDate)
-                            ),
-                            color: colors.yellow,
-                            allDay: true,
-                            meta: {
-                                appointment
-                            }
-                        }
-                    })
-
-                }),
-                tap(resp => console.log(resp))
-            );
+    ngOnDestroy(): void {
+        this._destroy$.next(true);
+        this._destroy$.unsubscribe();
     }
-
-    /*events: Array<CalendarEvent<{ incrementsBadgeTotal: boolean }>> = [
-        {
-            title: 'Increments badge total on the day cell',
-            color: colors.yellow,
-            start: new Date(),
-            end: new Date(1578095722828),
-            meta: {
-                incrementsBadgeTotal: true
-            }
-        },
-        {
-            title: 'Does not increment the badge total on the day cell',
-            color: colors.blue,
-            start: new Date(),
-            meta: {
-                incrementsBadgeTotal: true
-            }
-        },
-        {
-            title: 'Test badge total on the day cell',
-            color: colors.yellow,
-            start: new Date(1578095722828),
-            meta: {
-                incrementsBadgeTotal: true
-            }
-        },
-    ];*/
 
     dayClicked({date, events}: {
         date: Date;
-        events: Array<CalendarEvent<{ appointment: Appointment }>>;
+        events: Array<CalendarEvent<{ appointment: IAppointment }>>;
     }): void {
         if (isSameMonth(date, this.viewDate)) {
             if ((isSameDay(this.viewDate, date) && this.activeDayIsOpen === true) || events.length === 0) {
@@ -130,12 +63,111 @@ export class HomePage implements OnInit {
         }
     }
 
-    eventClicked(event: CalendarEvent<{ appointment: Appointment }>): void {
+    appointmentClicked(event: CalendarEvent<{ appointment: IAppointment }>): void {
         console.log('# => ', event);
-        /*window.open(
-            `https://www.themoviedb.org/movie/${event.meta.appointment.id}`,
-            '_blank'
-        );*/
+        this.appointmentActionSheet(event.meta.appointment);
+
     }
+
+    async presentModal(data?: IAppointment) {
+        const modal = await this._modalCtrl.create({
+            component: AppointmentComponent,
+            componentProps: {'appointmentData': data || null}
+        });
+        modal.onWillDismiss().then((event) => {
+            console.log('dismissed data ->', event);
+            if (event.role === 'CREATE') {
+                this.createAppointment(event.data);
+            } else if (event.role === 'UPDATE') {
+                this.updateAppointment(event.data);
+            }
+        });
+        return await modal.present();
+    }
+
+    async appointmentActionSheet(appointment: IAppointment) {
+        const actionSheet = await this._actionSheetCtrl.create({
+            header: 'Appointment',
+            buttons: this.actionButtons(appointment)
+        });
+        await actionSheet.present();
+    }
+
+    private fetchAppointments(): void {
+        const params = new HttpParams()
+            .set('startDate_gte', format(startOfMonth(this.viewDate), DATE_FORMAT.YYYYMMDD))
+            .set('startDate_lte', format(endOfMonth(this.viewDate), DATE_FORMAT.YYYYMMDD));
+
+        this._apiService.get('appointments', undefined, params)
+            .pipe(
+                takeUntil(this._destroy$),
+                map((appointments: IAppointment[]) => {
+                    return appointments.map((appointment: IAppointment) => {
+                        return {
+                            title: appointment.summary,
+                            start: new Date(appointment.startDate),
+                            end: new Date(appointment.endDate),
+                            color: isSameDay(new Date(appointment.startDate), this.viewDate) ? COLORS.blue : COLORS.yellow,
+                            meta: {appointment}
+                        }
+                    })
+                }),
+                tap(resp => console.log(resp))
+            )
+            .subscribe(resp => {
+                console.log('appointments ->', resp);
+                this.appointments = resp;
+                this.refresh.next();
+            });
+    }
+
+    private createAppointment(appointment: IAppointment) {
+        this._apiService.post<IAppointment>('appointments', appointment)
+            .pipe(takeUntil(this._destroy$))
+            .subscribe(resp => {
+                console.log(resp);
+            });
+    }
+
+    private updateAppointment(appointment: IAppointment) {
+        this._apiService.put<IAppointment>(`appointments/${appointment.id}`, appointment)
+            .pipe(takeUntil(this._destroy$))
+            .subscribe(resp => {
+                console.log(resp);
+            });
+    }
+
+    private deleteAppointment(appointmentId: number) {
+        this._apiService.delete(`appointments/${appointmentId}`)
+            .pipe(takeUntil(this._destroy$))
+            .subscribe(resp => {
+                console.log(resp);
+                this.appointments = this.appointments.filter(item => item.id !== appointmentId);
+                this.refresh.next();
+            })
+    }
+
+    private actionButtons(appointment: IAppointment): any[] {
+        return [
+            {
+                text: 'Edit', icon: 'create',
+                handler: () => {
+                    console.log('Edit clicked');
+                    this.presentModal(appointment);
+                }
+            },
+            {
+                text: 'Delete', role: 'destructive', icon: 'trash',
+                handler: () => {
+                    console.log('Delete clicked');
+                    this.deleteAppointment(appointment.id);
+                }
+            },
+            {
+                text: 'Cancel', icon: 'close', role: 'cancel'
+            }
+        ]
+    }
+
 
 }
