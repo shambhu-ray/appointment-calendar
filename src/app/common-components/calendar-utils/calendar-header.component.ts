@@ -1,5 +1,5 @@
 import {Component, EventEmitter, Input, Output} from '@angular/core';
-import {CalendarView} from "angular-calendar";
+import {CalendarView} from 'angular-calendar';
 
 @Component({
     selector: 'app-calendar-header',

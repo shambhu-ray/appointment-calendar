@@ -1,8 +1,8 @@
 import {Inject, Injectable, InjectionToken} from '@angular/core';
-import {HttpClient, HttpErrorResponse, HttpHeaders, HttpParams} from "@angular/common/http";
-import {Observable, throwError} from "rxjs";
-import {catchError} from "rxjs/operators";
-import {IErrorResponseModel} from "../models/error-response";
+import {HttpClient, HttpErrorResponse, HttpHeaders, HttpParams} from '@angular/common/http';
+import {Observable, throwError} from 'rxjs';
+import {catchError} from 'rxjs/operators';
+import {IErrorResponseModel} from '../models/error-response';
 
 export const BASE_URL = new InjectionToken<string>('BASE_URL');
 
@@ -20,7 +20,7 @@ export class ApiService {
         this._baseUrl = baseUrl
     }
 
-    public getHeaders(headers?: HttpHeaders): HttpHeaders {
+    private getHeaders(headers?: HttpHeaders): HttpHeaders {
         return headers ? headers :
             new HttpHeaders().set('Content-Type', 'application/json; charset=utf-8');
     }
@@ -77,7 +77,7 @@ export class ApiService {
      * Error handler
      * @param response
      */
-    handleError = (response: HttpErrorResponse): Observable<any> => {
+    private handleError = (response: HttpErrorResponse): Observable<any> => {
         const errorResponse: IErrorResponseModel = {
             statusCode: response.status,
             message: response.error ?

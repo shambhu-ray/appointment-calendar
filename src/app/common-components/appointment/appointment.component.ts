@@ -1,6 +1,6 @@
 import {ChangeDetectionStrategy, Component, Input, OnDestroy, OnInit} from '@angular/core';
 import {AbstractControl, FormControl, FormGroup, Validators} from '@angular/forms';
-import {addYears, format, isAfter} from "date-fns";
+import {addYears, format, isAfter} from 'date-fns';
 import {ModalController} from '@ionic/angular';
 import {DATE_FORMAT} from '../../models/date-format.model';
 import {takeUntil} from 'rxjs/operators';
@@ -28,12 +28,12 @@ export class AppointmentComponent implements OnInit, OnDestroy {
 
     @Input()
     set appointmentData(data: IAppointment) {
-        this.appointmentFormGroup = this._initAppointmentForm();
+        this.appointmentFormGroup = this.initAppointmentForm();
         console.log(data);
         if (data) {
             this.isNew = false;
             this.appointment = data;
-            this._populateForm(data);
+            this.populateForm(data);
         }
     }
 
@@ -51,14 +51,25 @@ export class AppointmentComponent implements OnInit, OnDestroy {
         this._destroy$.unsubscribe();
     }
 
+    /**
+     * To close/ dismiss the modal(Popup)
+     * @param modalData
+     */
     async dismissModal(modalData?: IAppointment): Promise<void> {
         await this._modalController.dismiss(modalData, modalData ? this.isNew ? 'CREATE' : 'UPDATE' : null);
     }
 
+    /**
+     * It returns an AbstractControl object with respect of form controller name
+     * @param controllerName
+     */
     getControl(controllerName: string): AbstractControl {
         return this.appointmentFormGroup.get(controllerName);
     }
 
+    /**
+     * It will called when appointment form will submitted
+     */
     onSubmit(): void {
         console.log(this.appointmentFormGroup.value);
         if (!this.appointmentFormGroup.valid) {
@@ -74,7 +85,10 @@ export class AppointmentComponent implements OnInit, OnDestroy {
         this.dismissModal(formValue);
     }
 
-    private _initAppointmentForm(): FormGroup {
+    /**
+     * To create an appointment form
+     */
+    private initAppointmentForm(): FormGroup {
         return new FormGroup({
             summary: new FormControl('', {
                 validators: [Validators.required, Validators.maxLength(255)]
@@ -93,10 +107,17 @@ export class AppointmentComponent implements OnInit, OnDestroy {
         });
     }
 
-    private _populateForm(data: IAppointment): void {
+    /**
+     * To populate appointment form with an appointment data
+     * @param data
+     */
+    private populateForm(data: IAppointment): void {
         this.appointmentFormGroup.patchValue(data);
     }
 
+    /**
+     * To manage dates, start date can not be bigger than end date
+     */
     private updateDateRange(): void {
         this.appointmentFormGroup.get('startDate').valueChanges
             .pipe(takeUntil(this._destroy$))
@@ -124,5 +145,4 @@ export class AppointmentComponent implements OnInit, OnDestroy {
             }
         });
     }
-
 }

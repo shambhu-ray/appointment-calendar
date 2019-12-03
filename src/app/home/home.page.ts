@@ -1,11 +1,11 @@
 import {ChangeDetectionStrategy, Component, OnDestroy, OnInit} from '@angular/core';
-import {CalendarDateFormatter, CalendarEvent, CalendarView} from "angular-calendar";
-import {Subject} from "rxjs";
-import {DateFormatter} from "../common-components/calendar-utils/date-formatter.provider";
+import {CalendarDateFormatter, CalendarEvent, CalendarView} from 'angular-calendar';
+import {Subject} from 'rxjs';
+import {DateFormatter} from '../common-components/calendar-utils/date-formatter.provider';
 import {endOfMonth, format, isSameDay, isSameMonth, startOfMonth} from 'date-fns';
-import {HttpParams} from "@angular/common/http";
-import {map, takeUntil, tap} from "rxjs/operators";
-import {ApiService} from "../core/api.service";
+import {HttpParams} from '@angular/common/http';
+import {map, takeUntil, tap} from 'rxjs/operators';
+import {ApiService} from '../core/api.service';
 import {ActionSheetController, ModalController} from '@ionic/angular';
 import {AppointmentComponent} from '../common-components/appointment/appointment.component';
 import {COLORS} from '../models/colors.model';
@@ -49,6 +49,12 @@ export class HomePage implements OnInit, OnDestroy {
         this._destroy$.unsubscribe();
     }
 
+    /**
+     * Get an event when click on day tile of calendar
+     * It's responsible to open/close events(appointments) list on calendar
+     * @param date - it's hold date of clicked day
+     * @param events - it's hold events(appointments) of clicked day
+     */
     dayClicked({date, events}: {
         date: Date;
         events: Array<CalendarEvent<{ appointment: IAppointment }>>;
@@ -63,17 +69,19 @@ export class HomePage implements OnInit, OnDestroy {
         }
     }
 
-    appointmentClicked(event: CalendarEvent<{ appointment: IAppointment }>): void {
-        console.log('# => ', event);
-        this.appointmentActionSheet(event.meta.appointment);
-
-    }
-
+    /**
+     * To open a modal(Popup) for create/ update an appointment
+     * @param data - it's an optional, holds appointment details
+     */
     async presentModal(data?: IAppointment) {
         const modal = await this._modalCtrl.create({
             component: AppointmentComponent,
             componentProps: {'appointmentData': data || null}
         });
+
+        /**
+         * Takes an event when modal(Popup) will be closed/ dismissed
+         */
         modal.onWillDismiss().then((event) => {
             console.log('dismissed data ->', event);
             if (event.role === 'CREATE') {
@@ -85,15 +93,48 @@ export class HomePage implements OnInit, OnDestroy {
         return await modal.present();
     }
 
+    /**
+     * It will get an event when an event(appointment) will be clicked
+     * @param event
+     */
+    async appointmentClicked(event: CalendarEvent<{ appointment: IAppointment }>): Promise<void> {
+        await this.appointmentActionSheet(event.meta.appointment);
+    }
+
+    /**
+     * It will open an action buttons as a list for clicked calendar appointment
+     * @param appointment
+     */
     async appointmentActionSheet(appointment: IAppointment) {
         const actionSheet = await this._actionSheetCtrl.create({
             header: 'Appointment',
-            buttons: this.actionButtons(appointment)
+            buttons: [
+                {
+                    text: 'Edit', icon: 'create',
+                    handler: () => {
+                        this.presentModal(appointment);
+                    }
+                },
+                {
+                    text: 'Delete', role: 'destructive', icon: 'trash',
+                    handler: () => {
+                        console.log('Delete clicked');
+                        this.deleteAppointment(appointment.id);
+                    }
+                },
+                {
+                    text: 'Cancel', icon: 'close', role: 'cancel'
+                }
+            ]
         });
         await actionSheet.present();
     }
 
+    /**
+     * To get appointments from backend
+     */
     private fetchAppointments(): void {
+        this.activeDayIsOpen = false;
         const params = new HttpParams()
             .set('startDate_gte', format(startOfMonth(this.viewDate), DATE_FORMAT.YYYYMMDD))
             .set('startDate_lte', format(endOfMonth(this.viewDate), DATE_FORMAT.YYYYMMDD));
@@ -103,6 +144,9 @@ export class HomePage implements OnInit, OnDestroy {
                 takeUntil(this._destroy$),
                 map((appointments: IAppointment[]) => {
                     return appointments.map((appointment: IAppointment) => {
+                        if (isSameDay(new Date(appointment.startDate), this.viewDate)) {
+                            this.activeDayIsOpen = true;
+                        }
                         return {
                             title: appointment.summary,
                             start: new Date(appointment.startDate),
@@ -121,53 +165,39 @@ export class HomePage implements OnInit, OnDestroy {
             });
     }
 
+    /**
+     * To create an appointment
+     * @param appointment - takes IAppointment type object
+     */
     private createAppointment(appointment: IAppointment) {
         this._apiService.post<IAppointment>('appointments', appointment)
             .pipe(takeUntil(this._destroy$))
-            .subscribe(resp => {
-                console.log(resp);
+            .subscribe(() => {
+                this.fetchAppointments();
             });
     }
 
+    /**
+     * To update an appointment
+     * @param appointment - takes IAppointment type object
+     */
     private updateAppointment(appointment: IAppointment) {
         this._apiService.put<IAppointment>(`appointments/${appointment.id}`, appointment)
             .pipe(takeUntil(this._destroy$))
-            .subscribe(resp => {
-                console.log(resp);
+            .subscribe(() => {
+                this.fetchAppointments();
             });
     }
 
+    /**
+     * To delete an appointment
+     * @param appointmentId - takes appointment id as a number
+     */
     private deleteAppointment(appointmentId: number) {
         this._apiService.delete(`appointments/${appointmentId}`)
             .pipe(takeUntil(this._destroy$))
-            .subscribe(resp => {
-                console.log(resp);
-                this.appointments = this.appointments.filter(item => item.id !== appointmentId);
-                this.refresh.next();
-            })
+            .subscribe(() => {
+                this.fetchAppointments();
+            });
     }
-
-    private actionButtons(appointment: IAppointment): any[] {
-        return [
-            {
-                text: 'Edit', icon: 'create',
-                handler: () => {
-                    console.log('Edit clicked');
-                    this.presentModal(appointment);
-                }
-            },
-            {
-                text: 'Delete', role: 'destructive', icon: 'trash',
-                handler: () => {
-                    console.log('Delete clicked');
-                    this.deleteAppointment(appointment.id);
-                }
-            },
-            {
-                text: 'Cancel', icon: 'close', role: 'cancel'
-            }
-        ]
-    }
-
-
 }

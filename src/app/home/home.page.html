@@ -12,14 +12,17 @@
             </ion-button>
         </ion-buttons>
     </ion-toolbar>
+    <ion-toolbar>
+        <app-calendar-header
+                (viewDateChange)="this.fetchAppointments()"
+                [(view)]="view"
+                [(viewDate)]="viewDate">
+        </app-calendar-header>
+    </ion-toolbar>
 </ion-header>
 
 <ion-content>
-    <app-calendar-header
-            [(view)]="view"
-            [(viewDate)]="viewDate"
-            (viewDateChange)="this.fetchAppointments()">
-    </app-calendar-header>
+
 
     <mwl-calendar-month-view
             [viewDate]="viewDate"
@@ -27,8 +30,7 @@
             [refresh]="refresh"
             [activeDayIsOpen]="activeDayIsOpen"
             (dayClicked)="dayClicked($event.day)"
-            (eventClicked)="appointmentClicked($event.event)"
-    >
+            (eventClicked)="appointmentClicked($event.event)">
     </mwl-calendar-month-view>
 
 </ion-content>
