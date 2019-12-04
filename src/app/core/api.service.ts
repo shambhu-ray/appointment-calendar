@@ -3,6 +3,7 @@ import {HttpClient, HttpErrorResponse, HttpHeaders, HttpParams} from '@angular/c
 import {Observable, throwError} from 'rxjs';
 import {catchError} from 'rxjs/operators';
 import {IErrorResponseModel} from '../models/error-response';
+import {ToasterService} from './toaster.service';
 
 export const BASE_URL = new InjectionToken<string>('BASE_URL');
 
@@ -15,6 +16,7 @@ export class ApiService {
 
     constructor(
         private _http: HttpClient,
+        private _roasterService: ToasterService,
         @Inject(BASE_URL) baseUrl?: string
     ) {
         this._baseUrl = baseUrl
@@ -86,6 +88,7 @@ export class ApiService {
                     response.message :
                 response.message
         };
+        this._roasterService.presentToast(errorResponse.message);
         return throwError(response);
     }
 

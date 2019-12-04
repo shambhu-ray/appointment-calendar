@@ -1,4 +1,4 @@
-interface IAppointment {
+export interface IAppointment {
     id?: number;
     summary: string;
     location: string;

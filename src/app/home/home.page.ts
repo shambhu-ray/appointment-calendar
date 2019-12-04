@@ -10,6 +10,8 @@ import {ActionSheetController, ModalController} from '@ionic/angular';
 import {AppointmentComponent} from '../common-components/appointment/appointment.component';
 import {COLORS} from '../models/colors.model';
 import {DATE_FORMAT} from '../models/date-format.model';
+import {ToasterService} from '../core/toaster.service';
+import {IAppointment} from '../models/appointment';
 
 @Component({
     selector: 'app-home',
@@ -31,11 +33,10 @@ export class HomePage implements OnInit, OnDestroy {
     refresh: Subject<any> = new Subject();
     private _destroy$: Subject<boolean> = new Subject<boolean>();
 
-    // events$: Observable<Array<CalendarEvent<{ appointment: IAppointmentModel }>>>;
-
     constructor(
         private _apiService: ApiService,
         private _modalCtrl: ModalController,
+        private _toasterService: ToasterService,
         private _actionSheetCtrl: ActionSheetController
     ) {
     }
@@ -83,7 +84,6 @@ export class HomePage implements OnInit, OnDestroy {
          * Takes an event when modal(Popup) will be closed/ dismissed
          */
         modal.onWillDismiss().then((event) => {
-            console.log('dismissed data ->', event);
             if (event.role === 'CREATE') {
                 this.createAppointment(event.data);
             } else if (event.role === 'UPDATE') {
@@ -118,7 +118,6 @@ export class HomePage implements OnInit, OnDestroy {
                 {
                     text: 'Delete', role: 'destructive', icon: 'trash',
                     handler: () => {
-                        console.log('Delete clicked');
                         this.deleteAppointment(appointment.id);
                     }
                 },
@@ -133,7 +132,7 @@ export class HomePage implements OnInit, OnDestroy {
     /**
      * To get appointments from backend
      */
-    private fetchAppointments(): void {
+    fetchAppointments(): void {
         this.activeDayIsOpen = false;
         const params = new HttpParams()
             .set('startDate_gte', format(startOfMonth(this.viewDate), DATE_FORMAT.YYYYMMDD))
@@ -155,11 +154,9 @@ export class HomePage implements OnInit, OnDestroy {
                             meta: {appointment}
                         }
                     })
-                }),
-                tap(resp => console.log(resp))
+                })
             )
             .subscribe(resp => {
-                console.log('appointments ->', resp);
                 this.appointments = resp;
                 this.refresh.next();
             });
@@ -171,7 +168,10 @@ export class HomePage implements OnInit, OnDestroy {
      */
     private createAppointment(appointment: IAppointment) {
         this._apiService.post<IAppointment>('appointments', appointment)
-            .pipe(takeUntil(this._destroy$))
+            .pipe(
+                takeUntil(this._destroy$),
+                tap(() => this._toasterService.presentToast('Appointment created successfully'))
+            )
             .subscribe(() => {
                 this.fetchAppointments();
             });
@@ -183,7 +183,10 @@ export class HomePage implements OnInit, OnDestroy {
      */
     private updateAppointment(appointment: IAppointment) {
         this._apiService.put<IAppointment>(`appointments/${appointment.id}`, appointment)
-            .pipe(takeUntil(this._destroy$))
+            .pipe(
+                takeUntil(this._destroy$),
+                tap(() => this._toasterService.presentToast('Appointment updated successfully'))
+            )
             .subscribe(() => {
                 this.fetchAppointments();
             });
@@ -195,7 +198,10 @@ export class HomePage implements OnInit, OnDestroy {
      */
     private deleteAppointment(appointmentId: number) {
         this._apiService.delete(`appointments/${appointmentId}`)
-            .pipe(takeUntil(this._destroy$))
+            .pipe(
+                takeUntil(this._destroy$),
+                tap(() => this._toasterService.presentToast('Appointment deleted successfully'))
+            )
             .subscribe(() => {
                 this.fetchAppointments();
             });

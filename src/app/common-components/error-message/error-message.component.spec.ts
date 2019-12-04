@@ -1,9 +1,8 @@
 import {async, ComponentFixture, TestBed} from '@angular/core/testing';
 
 import {ErrorMessageComponent} from './error-message.component';
-import {Component} from "@angular/core";
-import {FormControl} from "@angular/forms";
-import {TranslateFakeLoader, TranslateLoader, TranslateModule} from '@ngx-translate/core';
+import {Component} from '@angular/core';
+import {FormControl} from '@angular/forms';
 
 @Component({
     selector: 'test-component',
@@ -24,9 +23,6 @@ describe('ErrorMessageComponent', () => {
         TestBed.configureTestingModule({
             declarations: [ErrorMessageComponent, TestComponent],
             imports: [
-                TranslateModule.forRoot({
-                    loader: {provide: TranslateLoader, useClass: TranslateFakeLoader}
-                })
             ]
         }).compileComponents();
     }));

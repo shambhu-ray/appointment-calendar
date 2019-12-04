@@ -5,6 +5,7 @@ import {ModalController} from '@ionic/angular';
 import {DATE_FORMAT} from '../../models/date-format.model';
 import {takeUntil} from 'rxjs/operators';
 import {Subject} from 'rxjs';
+import {IAppointment} from '../../models/appointment';
 
 @Component({
     selector: 'app-appointment',
@@ -29,7 +30,6 @@ export class AppointmentComponent implements OnInit, OnDestroy {
     @Input()
     set appointmentData(data: IAppointment) {
         this.appointmentFormGroup = this.initAppointmentForm();
-        console.log(data);
         if (data) {
             this.isNew = false;
             this.appointment = data;
@@ -71,7 +71,6 @@ export class AppointmentComponent implements OnInit, OnDestroy {
      * It will called when appointment form will submitted
      */
     onSubmit(): void {
-        console.log(this.appointmentFormGroup.value);
         if (!this.appointmentFormGroup.valid) {
             this.markFormGroupTouched(this.appointmentFormGroup);
             return;

@@ -8,6 +8,7 @@
     "start": "ng serve",
     "build": "ng build",
     "test": "ng test",
+    "test-cc": "ng test --watch=false --code-coverage",
     "lint": "ng lint",
     "e2e": "ng e2e"
   },
